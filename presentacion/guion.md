@@ -17,6 +17,7 @@ Docente: Marco Antonio Japke Adriasola
 
 1. En SQL Developer ejecutar con F5, en este orden:
    `BD_arriendo_equipos_AV_EVENTS.sql` → `sql/01_auditoria.sql` → `02` → `03` → `04` → `05`.
+   **Ojo:** si vuelven a ejecutar el script del caso, este borra `FACTURA_ARRIENDO` (`DROP TABLE … CASCADE CONSTRAINTS`) y con ella se borran sus triggers. Después hay que ejecutar otra vez `01` a `05`.
 2. Revisar que todo quedó **VALID**:
    ```sql
    SELECT object_name, object_type, status FROM user_objects
@@ -24,8 +25,8 @@ Docente: Marco Antonio Japke Adriasola
    ```
 3. Ejecutar `pruebas/limpieza.sql` para partir con las tablas vacías.
 4. Dejar abiertos en pestañas: `02_funciones.sql`, `03_procedimientos.sql`, `04_package.sql`, `05_triggers.sql`, `06_demo.sql`.
-5. Abrir la ventana **Dbms Output** (Ver → Dbms Output) o usar Script Output con `SET SERVEROUTPUT ON` (línea 8 de `06_demo.sql`).
-6. Subir el tamaño de letra del editor para que se lea desde atrás (Herramientas → Preferencias → Editor de código → Fuentes).
+5. Ejecutar `SET SERVEROUTPUT ON;` (línea 8 de `06_demo.sql`) para que los mensajes aparezcan en el Script Output.
+6. Subir el tamaño de letra del editor para que se lea desde atrás (en inglés: Tools → Preferences → Code Editor → Fonts; en español: Herramientas → Preferencias → Editor de código → Fuentes).
 7. Ensayar con cronómetro. Cada uno debe poder explicar **cualquier** archivo, no solo el suyo.
 
 ---
@@ -61,7 +62,7 @@ Es el mismo reparto de roles de la actividad 1.4.1 del ramo (Estudiante 1 proced
 - El resultado se guarda en `FACTURA_ARRIENDO` y se resume por tipo de equipo en `RESUMEN_ARRIENDO_TIPO`. Las dos tablas venían vacías en el script del caso.
 
 **Pregunta probable:** "¿De dónde sacaron el 19%?"
-**Respuesta:** "El caso no indica la tasa; usamos el IVA vigente en Chile y lo dejamos como supuesto. Está en una sola función, así que cambiarlo es tocar una línea."
+**Respuesta:** "El caso no indica la tasa; usamos el IVA vigente en Chile, el mismo supuesto que declaramos en la EP1. Está en una sola función, así que cambiarlo es tocar una línea."
 
 ### Diapositiva 4 · Cómo se conecta todo — Javier
 
@@ -84,7 +85,7 @@ Es el mismo reparto de roles de la actividad 1.4.1 del ramo (Estudiante 1 proced
 - Línea 11 (Ctrl+Enter): `SELECT fn_total_facturas FROM dual;`
   **Deberían ver:** `0` (todavía no hay facturas).
 - Líneas 14–21 (Ctrl+Enter): consulta sobre **todos los arriendos** con las funciones dentro del `SELECT`.
-  **Deberían ver:** 103 filas con monto bruto, % de ajuste y monto neto.
+  **Deberían ver:** filas con monto bruto, % de ajuste y monto neto. Son 103 en total; SQL Developer muestra las primeras 50 y carga el resto al bajar.
 
 **Decir:** "Esto demuestra que la función se usa dentro de una sentencia SQL y procesa información masiva: se ejecuta una vez por cada uno de los 103 arriendos."
 
@@ -101,7 +102,7 @@ Es el mismo reparto de roles de la actividad 1.4.1 del ramo (Estudiante 1 proced
 |---|---|
 | 7–10 | `sp_generar_facturas` recibe **dos parámetros IN**: mes y año. |
 | 12–19 | Cursor **con parámetros**: trae los arriendos del mes uniendo arriendo, equipo y cliente. |
-| 11 | Comentario: `EXTRACT` no está en las guías, viene del script del caso (ver sección 3). |
+| 11 | Comentario: `EXTRACT` no está en las guías; el script del caso lo usa con `YEAR` (ver sección 3). |
 | 21–34 | Variables con `%TYPE`, una por cada dato de la factura. |
 | 36–40 | `OPEN` / `FETCH` / `EXIT WHEN %NOTFOUND`: recorre fila por fila, igual que en la unidad 1. |
 | 43–47 | Revisa con `COUNT(*)` si el arriendo ya tiene factura, para no duplicar. |
@@ -118,7 +119,7 @@ Es el mismo reparto de roles de la actividad 1.4.1 del ramo (Estudiante 1 proced
 - Líneas 33–36 (F5): `sp_reporte_facturas;`
   **Deberían ver:** 23 líneas "Arriendo: …, Cliente: …, Total: …" y al final `Total de facturas: 23`.
 
-**Decir:** "El proceso lo lanzamos desde el package, pero las 23 facturas las genera mi procedimiento: el package lo llama en su línea 101. Eso es usar un procedimiento dentro de otro programa PL/SQL."
+**Decir:** "El proceso lo lanzamos desde el package, pero las 23 facturas las genera mi procedimiento: el package lo llama en su línea 102. Eso es usar un procedimiento dentro de otro programa PL/SQL."
 
 **Preguntas probables:**
 - "¿Qué pasa si lo ejecutan dos veces?" → "La segunda vez cada arriendo cae en el ELSE (línea 69) y dice 'ya estaba facturado'; quedan 0 facturas nuevas."
@@ -135,12 +136,12 @@ Es el mismo reparto de roles de la actividad 1.4.1 del ramo (Estudiante 1 proced
 | 8–12 | **Especificación**: lo público. Solo 3 cosas se pueden llamar desde fuera. |
 | 16 | **Cuerpo**: la implementación. |
 | 18–22 | `print_line`, **procedimiento privado** (está en el cuerpo pero no en la especificación). Igual al ejemplo `sales_reporting` de la guía 2.2.5. |
-| 24–34 | `fn_clasificar`, **función privada**: ALTO / MEDIO / BAJO según el ingreso (supuesto del equipo). |
-| 37–46 | `fn_ingresos_mes`, función pública: suma lo facturado en el mes. |
-| 49–95 | `sp_generar_resumen`, público: agrupa por tipo de equipo con `GROUP BY`. |
-| 67–69 | La función privada se guarda primero en una variable (ver pregunta abajo). |
-| 71–90 | Si el resumen ya existe lo actualiza (`UPDATE`), si no, lo inserta (`INSERT`). |
-| 98–104 | `sp_proceso_mensual`, público: el punto de entrada. Llama al procedimiento del archivo 03 (línea 101), al resumen y a la función de ingresos. |
+| 24–34 | `fn_clasificar`, **función privada**: ALTO / MEDIO / BAJO según el ingreso (mismo supuesto de la EP1: ≥ 3.000.000 ALTO, ≥ 1.000.000 MEDIO). |
+| 36–47 | `fn_ingresos_mes`, función pública: suma lo facturado en el mes. |
+| 50–96 | `sp_generar_resumen`, público: agrupa por tipo de equipo con `GROUP BY`. |
+| 68–70 | El resultado de la función privada se guarda en `v_clasificacion` (ver pregunta abajo). |
+| 72–91 | Si el resumen ya existe lo actualiza (`UPDATE`), si no, lo inserta (`INSERT`). |
+| 99–105 | `sp_proceso_mensual`, público: el punto de entrada. Llama al procedimiento del archivo 03 (línea 102), al resumen y a la función de ingresos. |
 
 **Ejecutar:** `sql/06_demo.sql`
 - Línea 40 (Ctrl+Enter): `SELECT pkg_facturacion.fn_ingresos_mes(3, 2026) FROM dual;`
@@ -152,17 +153,19 @@ Es el mismo reparto de roles de la actividad 1.4.1 del ramo (Estudiante 1 proced
   |---|---|---|---|
   | Pantalla LED | 4 | 5.208.630 | ALTO |
   | Iluminación Escénica | 4 | 4.370.275 | ALTO |
-  | Sistema de Sonido | 5 | 3.688.762 | MEDIO |
-  | Consola de Mezcla | 4 | 3.155.642 | MEDIO |
-  | Proyector | 6 | 2.813.160 | BAJO |
+  | Sistema de Sonido | 5 | 3.688.762 | ALTO |
+  | Consola de Mezcla | 4 | 3.155.642 | ALTO |
+  | Proyector | 6 | 2.813.160 | MEDIO |
+
+  (El orden de las filas puede variar. Ningún tipo queda BAJO porque todos superan $1.000.000.)
 
 - **Prueba en vivo de que es privado:** en `pruebas/pruebas_ep2.sql`, quitar los guiones de la Prueba 12 y ejecutar.
-  **Deberían ver:** error `PLS-00302: el componente 'FN_CLASIFICAR' se debe declarar`. Eso prueba que desde fuera no existe.
+  **Deberían ver:** un error `PLS-00302` que dice que el componente `FN_CLASIFICAR` debe ser declarado (en inglés: *component 'FN_CLASIFICAR' must be declared*). Eso prueba que desde fuera no existe.
 
 **Preguntas probables:**
 - "¿Qué es público y qué es privado?" → "Público es lo que está en la especificación (líneas 9 a 11). Privado es lo que solo está en el cuerpo: `print_line` y `fn_clasificar`."
 - "¿Por qué hacerlos privados?" → "Son detalles internos. Nadie de fuera necesita clasificar un ingreso suelto; así se puede cambiar la regla sin afectar a quien usa el package."
-- "¿Por qué no pusieron `fn_clasificar` directo en el INSERT?" → "Porque Oracle no deja usar una función privada dentro de una sentencia SQL (da error PLS-00231). Por eso la guardamos antes en `v_clasificacion` (línea 69)."
+- "¿Por qué guardan `fn_clasificar` en una variable?" → "Para calcularla una sola vez (línea 70) y usar el mismo resultado en el INSERT o el UPDATE y en el mensaje de salida."
 - "¿Qué ganan con el package?" → "Un solo punto de entrada para todo el proceso, código ordenado en un lugar y la posibilidad de ocultar lo interno."
 
 ### Diapositiva 8 · Triggers: fila vs sentencia — Martín
@@ -171,17 +174,17 @@ Es el mismo reparto de roles de la actividad 1.4.1 del ramo (Estudiante 1 proced
 
 | Líneas | Qué explicar |
 |---|---|
-| 6–16 | `trg_valida_factura`: **a nivel de fila** (`FOR EACH ROW`, línea 8). Se ejecuta una vez por **cada** factura. |
+| 6–17 | `trg_valida_factura`: **a nivel de fila** (`FOR EACH ROW`, línea 8). Se ejecuta una vez por **cada** factura. |
 | 7 | `BEFORE INSERT`: valida antes de guardar (las guías dicen: validar con BEFORE). |
-| 10–15 | Usa `:NEW` para revisar los valores de esa fila; si están mal, `RAISE_APPLICATION_ERROR` cancela el INSERT. |
-| 20–33 | `trg_auditoria_factura`: **a nivel de sentencia** (no tiene `FOR EACH ROW`). Se ejecuta **una vez por sentencia**, sin importar cuántas filas toque. |
-| 21 | `AFTER INSERT OR UPDATE OR DELETE`: audita después (las guías dicen: auditar con AFTER). |
-| 23–32 | `INSERTING / UPDATING / DELETING` dicen qué operación fue y la anota en `auditoria_factura`. |
+| 10–16 | Usa `:NEW` para revisar los valores de esa fila; si están mal, `RAISE_APPLICATION_ERROR` cancela el INSERT. Línea 10: días menor que 1. Línea 14: `<>` significa "distinto de" (comentario en la línea 13). |
+| 21–34 | `trg_auditoria_factura`: **a nivel de sentencia** (no tiene `FOR EACH ROW`). Se ejecuta **una vez por sentencia**, sin importar cuántas filas toque. |
+| 22 | `AFTER INSERT OR UPDATE OR DELETE`: audita después (las guías dicen: auditar con AFTER). |
+| 24–33 | `INSERTING / UPDATING / DELETING` dicen qué operación fue y la anota en `auditoria_factura`. |
 
 **Ejecutar:** `sql/06_demo.sql`
 1. Línea 43 (Ctrl+Enter): `SELECT * FROM auditoria_factura;`
    **Deberían ver:** 23 filas `INSERT`. Explicar: "Cada INSERT del procedimiento es una sentencia distinta, por eso hay 23."
-2. Línea 48 (F5): `DELETE FROM factura_arriendo;` → **"23 filas eliminadas"**.
+2. Línea 48 (F5): `DELETE FROM factura_arriendo;` → mensaje de **23 filas borradas** (*23 rows deleted*).
 3. Línea 49 (Ctrl+Enter): `SELECT * FROM auditoria_factura;`
    **Deberían ver:** 24 filas: solo **una** nueva, `DELETE`.
 
@@ -190,7 +193,7 @@ Es el mismo reparto de roles de la actividad 1.4.1 del ramo (Estudiante 1 proced
 4. Líneas 52–56 (F5): vuelve a generar las facturas para dejar todo listo.
 
 **Prueba del trigger de fila:** en `pruebas/pruebas_ep2.sql` ejecutar la Prueba 9.
-**Deberían ver:** `OK Prueba 9: trigger rechazó la factura -> ORA-20002: El total no coincide con neto + IVA`.
+**Deberían ver:** una línea que empieza con `OK   Prueba 9: trigger rechazó la factura -> ORA-20002: El total no coincide con neto + IVA`. Oracle puede agregar después líneas `ORA-06512` / `ORA-04088` que indican en qué trigger ocurrió; es normal.
 
 **Preguntas probables:**
 - "¿Cuál es la diferencia entre fila y sentencia?" → "El de fila se ejecuta una vez por cada fila afectada y puede leer `:NEW` y `:OLD`. El de sentencia se ejecuta una vez por sentencia y no puede ver los valores de las filas."
@@ -203,7 +206,7 @@ Es el mismo reparto de roles de la actividad 1.4.1 del ramo (Estudiante 1 proced
 **Decir:** "Este es el resumen que generó el package: ingreso por tipo de equipo y su clasificación. En total se facturaron $19.236.469 en 23 facturas."
 **Mostrar:** el resultado de `SELECT * FROM resumen_arriendo_tipo;` (línea 42 de `06_demo.sql`) junto al gráfico.
 
-**Pregunta probable:** "¿De dónde salen ALTO, MEDIO y BAJO?" → "Es un supuesto nuestro: el caso tiene la columna pero no da la regla. Está en la función privada `fn_clasificar` (líneas 25–34 de `04_package.sql`)."
+**Pregunta probable:** "¿De dónde salen ALTO, MEDIO y BAJO?" → "El caso tiene la columna pero no da la regla. Usamos el mismo supuesto de la EP1: desde $3.000.000 es ALTO, desde $1.000.000 es MEDIO y menos es BAJO. Está en la función privada `fn_clasificar` (líneas 25–34 de `04_package.sql`)."
 
 ### Diapositiva 10 · Supuestos y código fuera de las guías — Martín
 
@@ -226,7 +229,8 @@ Ver la sección 5.
 | Código | Dónde | Por qué se usó | Cómo funciona | Resultado |
 |---|---|---|---|---|
 | `SET SERVEROUTPUT ON` | `06_demo.sql` línea 8, `pruebas_ep2.sql` | Sin esto SQL Developer no muestra lo que imprime `DBMS_OUTPUT.PUT_LINE`. Es un comando de la herramienta, no de PL/SQL. | Activa la salida del buffer de DBMS_OUTPUT en el Script Output. | Se ven los mensajes "Facturas generadas: 23", etc. |
-| `EXTRACT(MONTH/YEAR FROM fecha)` | `03_procedimientos.sql` líneas 18–19, `04_package.sql` líneas 43–44 y 59–60 | Hay que filtrar los arriendos de un mes y año. El script del caso del profesor ya usa `EXTRACT(YEAR FROM SYSDATE)`. | Saca el número del mes o del año de una fecha. | Solo se procesan los arriendos de marzo 2026. |
+| `EXTRACT(MONTH/YEAR FROM fecha)` | `03_procedimientos.sql` líneas 18–19, `04_package.sql` líneas 44–45 y 60–61 | Hay que filtrar los arriendos de un mes y año. El script del caso del profesor usa `EXTRACT(YEAR FROM SYSDATE)`; nosotros lo usamos igual y también con `MONTH`. | Saca el número del mes o del año de una fecha. | Solo se procesan los arriendos de marzo 2026. |
+| `<>` | `05_triggers.sql` línea 14 | Para comparar si el total es distinto de neto + IVA. Es el operador "distinto de" de SQL básico. | Es verdadero cuando los dos valores no son iguales. | Si no cuadra, el trigger lanza ORA-20002 y la factura no se guarda. |
 | `COMMIT` | `06_demo.sql` líneas 30 y 56, `pruebas_ep2.sql`, `limpieza.sql` | Para dejar guardados los datos. El script del caso termina con `COMMIT`. | Confirma la transacción. | Los datos quedan aunque se cierre SQL Developer. |
 | `DROP TABLE / DROP SEQUENCE` | `01_auditoria.sql` líneas 8–9 | Para poder ejecutar el archivo más de una vez. El script del caso hace lo mismo. | Borra la tabla o secuencia si existe. | La primera vez muestra ORA-00942 / ORA-02289 (no existe) y es normal. |
 | `DELETE FROM tabla` | `06_demo.sql` línea 48, `pruebas_ep2.sql` Prueba 11, `limpieza.sql` | Para demostrar el trigger de sentencia con una sola sentencia que afecta muchas filas, y para limpiar antes de ensayar. Es SQL básico. | Borra las filas de la tabla. | La auditoría suma solo 1 línea aunque se borren 23 filas. |
@@ -275,6 +279,7 @@ Ver la sección 5.
 | No aparece ningún mensaje | Ejecutar `SET SERVEROUTPUT ON;` (línea 8 de la demo). |
 | `Facturas generadas: 0` y "ya estaba facturado" | Ya se había corrido. Ejecutar `pruebas/limpieza.sql` y repetir. |
 | `ORA-04098: trigger … no válido` | Volver a ejecutar `01_auditoria.sql` y después `05_triggers.sql`. |
+| No hay auditoría ni validación después de recargar la base | El script del caso borró los triggers junto con `FACTURA_ARRIENDO`. Ejecutar otra vez `01` a `05`. |
 | "compiled with errors" | `SELECT * FROM user_errors;` y revisar la línea que indica. |
 | La consulta del resumen sale vacía | El año no coincide: revisar con `SELECT DISTINCT EXTRACT(YEAR FROM fecha_ini_arriendo) FROM arriendo_equipo_av;` y cambiar 2026. |
 

@@ -7,9 +7,10 @@ CREATE OR REPLACE TRIGGER trg_valida_factura
 BEFORE INSERT ON factura_arriendo
 FOR EACH ROW
 BEGIN
-   IF :NEW.dias_solicitados <= 0 THEN
+   IF :NEW.dias_solicitados < 1 THEN
       RAISE_APPLICATION_ERROR(-20001, 'Los días solicitados deben ser mayores a cero');
    END IF;
+   -- <> significa "distinto de" (no aparece en las guías; es SQL básico)
    IF :NEW.total_factura <> :NEW.monto_neto + :NEW.iva THEN
       RAISE_APPLICATION_ERROR(-20002, 'El total no coincide con neto + IVA');
    END IF;

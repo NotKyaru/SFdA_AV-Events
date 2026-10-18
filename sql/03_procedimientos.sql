@@ -8,7 +8,7 @@ CREATE OR REPLACE PROCEDURE sp_generar_facturas(
    p_mes  IN NUMBER,
    p_anno IN NUMBER
 ) IS
-   -- EXTRACT no aparece en las guías; lo usa el script del caso del profesor
+   -- EXTRACT no aparece en las guías: el script del caso lo usa con YEAR
    CURSOR c_arriendos (p_m NUMBER, p_a NUMBER) IS
       SELECT a.id_arriendo, a.cod_equipo, a.numrun_cli, c.id_tipo_cli,
              a.dias_solicitados, e.valor_arriendo_dia

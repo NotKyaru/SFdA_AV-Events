@@ -83,6 +83,15 @@ BEGIN
    ELSE
       DBMS_OUTPUT.PUT_LINE('FAIL Prueba 8: se esperaba ALTO y llegó ' || v_clasificacion);
    END IF;
+
+   SELECT clasificacion INTO v_clasificacion
+   FROM resumen_arriendo_tipo
+   WHERE id_tipo_equipo = 'P' AND mes_proceso = 3 AND anno_proceso = 2026;
+   IF v_clasificacion = 'MEDIO' THEN
+      DBMS_OUTPUT.PUT_LINE('OK   Prueba 8: Proyector quedó clasificado MEDIO');
+   ELSE
+      DBMS_OUTPUT.PUT_LINE('FAIL Prueba 8: se esperaba MEDIO y llegó ' || v_clasificacion);
+   END IF;
 EXCEPTION
    WHEN NO_DATA_FOUND THEN
       DBMS_OUTPUT.PUT_LINE('FAIL Prueba 8: no existe el resumen de marzo');

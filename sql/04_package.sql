@@ -21,12 +21,12 @@ CREATE OR REPLACE PACKAGE BODY pkg_facturacion IS
       DBMS_OUTPUT.PUT_LINE(p_texto);
    END print_line;
 
-   -- Función Privada: clasificación del ingreso (supuesto del equipo)
+   -- Función Privada: clasificación del ingreso (mismo supuesto de la EP1)
    FUNCTION fn_clasificar(p_ingreso IN NUMBER) RETURN VARCHAR2 IS
    BEGIN
-      IF p_ingreso >= 4000000 THEN
+      IF p_ingreso >= 3000000 THEN
          RETURN 'ALTO';
-      ELSIF p_ingreso >= 3000000 THEN
+      ELSIF p_ingreso >= 1000000 THEN
          RETURN 'MEDIO';
       ELSE
          RETURN 'BAJO';
@@ -34,6 +34,7 @@ CREATE OR REPLACE PACKAGE BODY pkg_facturacion IS
    END fn_clasificar;
 
    -- Función Pública: total facturado en un mes
+   -- EXTRACT no aparece en las guías: el script del caso lo usa con YEAR
    FUNCTION fn_ingresos_mes(p_mes IN NUMBER, p_anno IN NUMBER) RETURN NUMBER IS
       v_total NUMBER;
    BEGIN
@@ -64,8 +65,8 @@ CREATE OR REPLACE PACKAGE BODY pkg_facturacion IS
    BEGIN
       print_line('Resumen por tipo de equipo ' || p_mes || '/' || p_anno);
       FOR r_tipo IN c_tipos(p_mes, p_anno) LOOP
-         -- La función privada se guarda primero en una variable:
-         -- Oracle no permite usarla directo dentro del INSERT
+         -- Se calcula una sola vez y se usa en el INSERT o UPDATE
+         -- y en el mensaje de salida
          v_clasificacion := fn_clasificar(r_tipo.ingreso);
 
          SELECT COUNT(*) INTO v_existe
