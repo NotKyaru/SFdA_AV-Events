@@ -149,7 +149,7 @@ END;
 COMMIT;
 
 -- Prueba 12 (manual): una parte privada NO se puede llamar desde fuera.
--- Quitar los guiones de las 3 líneas siguientes y ejecutar.
+-- Quitar los guiones de las 4 líneas siguientes y ejecutar.
 -- Resultado esperado: error PLS-00302 (el componente FN_CLASIFICAR debe ser declarado)
 -- BEGIN
 --    DBMS_OUTPUT.PUT_LINE(pkg_facturacion.fn_clasificar(5000000));
